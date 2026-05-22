@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 import io
 import re
@@ -80,15 +80,38 @@ EXCEL_COLUMNS: List[Dict] = [
 TEMPLATE_BASENAME = "ostateczny - kopia.xlsx"
 
 
-def find_excel_template() -> Optional[str]:
-    """Szablon w tym samym folderze co skrypt (działa też na Streamlit Cloud)."""
-    script_dir = Path(__file__).resolve().parent
+def _script_dir() -> Path:
+    return Path(__file__).resolve().parent
+
+
+def create_excel_template(path: Path) -> None:
+    """Tworzy szablon (wiersz 2 = źródło, wiersz 3 = nagłówki, dane od wiersza 4)."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Arkusz1"
+    for col_def in EXCEL_COLUMNS:
+        ws.cell(2, col_def["idx"], col_def["source"])
+        ws.cell(3, col_def["idx"], col_def["header"])
+    wb.save(path)
+
+
+def ensure_excel_template() -> str:
+    """Szablon obok skryptu — tworzy plik, jeśli go nie ma (Streamlit Cloud)."""
+    script_dir = _script_dir()
     for name in (TEMPLATE_BASENAME, "ostateczny — kopia.xlsx"):
         path = script_dir / name
         if path.is_file():
             return str(path)
     matches = sorted(script_dir.glob("ostateczny*kopia*.xlsx"))
-    return str(matches[0]) if matches else None
+    if matches:
+        return str(matches[0])
+    path = script_dir / TEMPLATE_BASENAME
+    create_excel_template(path)
+    return str(path)
+
+
+def find_excel_template() -> str:
+    return ensure_excel_template()
 
 
 def build_full_row(result: Dict[str, str]) -> List[str]:
@@ -111,27 +134,11 @@ def results_to_dataframe(results: List[Dict[str, str]]) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=columns)
 
 
-def export_results_to_excel(
-    results: List[Dict[str, str]], template_bytes: Optional[bytes] = None
-) -> bytes:
-    template_path = find_excel_template() if not template_bytes else None
-    if template_bytes:
-        wb = openpyxl.load_workbook(io.BytesIO(template_bytes))
-        ws = wb["Arkusz1"] if "Arkusz1" in wb.sheetnames else wb.active
-        if ws.max_row >= 4:
-            ws.delete_rows(4, ws.max_row - 3)
-    elif template_path:
-        wb = openpyxl.load_workbook(template_path)
-        ws = wb["Arkusz1"]
-        if ws.max_row >= 4:
-            ws.delete_rows(4, ws.max_row - 3)
-    else:
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Arkusz1"
-        for col_def in EXCEL_COLUMNS:
-            ws.cell(2, col_def["idx"], col_def["source"])
-            ws.cell(3, col_def["idx"], col_def["header"])
+def export_results_to_excel(results: List[Dict[str, str]]) -> bytes:
+    wb = openpyxl.load_workbook(ensure_excel_template())
+    ws = wb["Arkusz1"] if "Arkusz1" in wb.sheetnames else wb.active
+    if ws.max_row >= 4:
+        ws.delete_rows(4, ws.max_row - 3)
 
     for row_idx, result in enumerate(results, start=4):
         for col_def, value in zip(EXCEL_COLUMNS, build_full_row(result)):
@@ -404,26 +411,6 @@ st.write(
 )
 
 ocr = ApartmentPlanOCR()
-template_path = find_excel_template()
-with st.sidebar:
-    st.header("Szablon Excel")
-    if template_path:
-        st.success(f"Używany szablon: `{Path(template_path).name}`")
-    else:
-        st.warning(
-            f"Brak pliku `{TEMPLATE_BASENAME}` w repozytorium. "
-            "Eksport utworzy nagłówki z kodu albo użyj własnego szablonu poniżej."
-        )
-    custom_template = st.file_uploader(
-        "Własny szablon (opcjonalnie, nadpisuje domyślny)",
-        type=["xlsx"],
-        key="custom_template_upload",
-    )
-    if custom_template is not None:
-        st.session_state["custom_template_bytes"] = custom_template.getvalue()
-        st.caption(f"Wgrano: {custom_template.name}")
-    elif "custom_template_bytes" in st.session_state:
-        del st.session_state["custom_template_bytes"]
 
 uploaded_files = st.file_uploader(
     "Wybierz pliki PDF (np. 'OP6_ZT-1A.pdf')",
@@ -462,9 +449,7 @@ if uploaded_files:
             st.warning("Nie udało się wydobyć danych z żadnego z plików.")
 
 if "df_results" in st.session_state:
-
-    template_bytes = st.session_state.get("custom_template_bytes")
-    excel_data = export_results_to_excel(st.session_state["df_results"], template_bytes)
+    excel_data = export_results_to_excel(st.session_state["df_results"])
 
     st.download_button(
         label="Pobierz wyniki jako plik Excel (format szablonu)",

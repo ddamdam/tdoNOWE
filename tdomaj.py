@@ -10,14 +10,14 @@ import pymupdf as fitz
 import openpyxl
 from openpyxl.utils import get_column_letter
 
-# Szablon Excel: wiersz 2 = ┼║r├│d┼éo (architekt/marketing/ocr), wiersz 3 = nag┼é├│wki, dane od wiersza 4.
-# Program uzupe┼énia WY┼ü─äCZNIE kolumny oznaczone jako "ocr".
+# Szablon Excel: wiersz 2 = źródło (architekt/marketing/ocr), wiersz 3 = nagłówki, dane od wiersza 4.
+# Program uzupełnia WYŁĄCZNIE kolumny oznaczone jako "ocr".
 EXCEL_COLUMNS: List[Dict] = [
     {"idx": 1, "source": "architekt", "header": "Numer lokalu z dokumentacji budowlanej"},
-    {"idx": 2, "source": "architekt", "header": "Powierzchnia z dokumentacji budowlanej dla GW (m2) (z gara┼╝ami)\n*UWAGA: powierzchnia do zweryfikowania po otrzymaniu proj. budowlanego"},
-    {"idx": 3, "source": "architekt", "header": "Powierzchnia z dokumentacji budowlanej dla GW (m2) + pow. schod├│w"},
+    {"idx": 2, "source": "architekt", "header": "Powierzchnia z dokumentacji budowlanej dla GW (m2) (z garażami)\n*UWAGA: powierzchnia do zweryfikowania po otrzymaniu proj. budowlanego"},
+    {"idx": 3, "source": "architekt", "header": "Powierzchnia z dokumentacji budowlanej dla GW (m2) + pow. schodów"},
     {"idx": 4, "source": "marketing", "header": "OSIEDLE"},
-    {"idx": 5, "source": "marketing", "header": "Miasto/Miejscowo┼Ť─ç"},
+    {"idx": 5, "source": "marketing", "header": "Miasto/Miejscowość"},
     {"idx": 6, "source": "marketing", "header": "Dzielnica"},
     {"idx": 7, "source": "marketing", "header": "Numer budynku"},
     {"idx": 8, "source": "ocr", "header": "NUMER LOKALU"},
@@ -28,45 +28,45 @@ EXCEL_COLUMNS: List[Dict] = [
     {"idx": 13, "source": "architekt", "header": "TYP"},
     {"idx": 14, "source": "ocr", "header": "EKSPOZYCJA "},
     {"idx": 15, "source": "ocr", "header": "POWIERZCHNIA UZYTKOWA PARTER"},
-    {"idx": 16, "source": "ocr", "header": "POWIERZCHNIA UZYTKOWA PI─śTRO "},
+    {"idx": 16, "source": "ocr", "header": "POWIERZCHNIA UZYTKOWA PIĘTRO "},
     {"idx": 17, "source": "ocr", "header": "POWIERZCHNIA UZYTKOWA PIETRO 2"},
-    {"idx": 18, "source": "ocr", "header": "Powierzchnia pod ┼Ťciankami i schod├│w Parter "},
-    {"idx": 19, "source": "ocr", "header": "Powierzchnia pod ┼Ťciankami  i schod├│w  Pi─Ötro  "},
-    {"idx": 20, "source": "ocr", "header": "Powierzchnia pod ┼Ťciankami  i schod├│w  Pi─Ötro  2"},
-    {"idx": 21, "source": "ocr", "header": "┼é─ůczna powierzchnia parter"},
-    {"idx": 22, "source": "ocr", "header": "┼é─ůczna powierzchnia pi─Ötro"},
-    {"idx": 23, "source": "ocr", "header": "┼é─ůczna powierzchnia pi─Ötro 2"},
-    {"idx": 24, "source": "ocr", "header": "POWIERZCHNIA ┼ü─äCZNIE"},
-    {"idx": 25, "source": "ocr", "header": "POWIERZCHNIA U┼╗YTKOWA ┼ü─äCZNIE"},
+    {"idx": 18, "source": "ocr", "header": "Powierzchnia pod ściankami i schodów Parter "},
+    {"idx": 19, "source": "ocr", "header": "Powierzchnia pod ściankami  i schodów  Piętro  "},
+    {"idx": 20, "source": "ocr", "header": "Powierzchnia pod ściankami  i schodów  Piętro  2"},
+    {"idx": 21, "source": "ocr", "header": "łączna powierzchnia parter"},
+    {"idx": 22, "source": "ocr", "header": "łączna powierzchnia piętro"},
+    {"idx": 23, "source": "ocr", "header": "łączna powierzchnia piętro 2"},
+    {"idx": 24, "source": "ocr", "header": "POWIERZCHNIA ŁĄCZNIE"},
+    {"idx": 25, "source": "ocr", "header": "POWIERZCHNIA UŻYTKOWA ŁĄCZNIE"},
     {"idx": 26, "source": "ocr", "header": "LICZBA POKOI "},
     {"idx": 27, "source": "ocr", "header": "LICZBA KONDYGNACJI "},
-    {"idx": 29, "source": "ocr", "header": "OGR├ôD"},
+    {"idx": 29, "source": "ocr", "header": "OGRÓD"},
     {"idx": 30, "source": "ocr", "header": "PODDASZE"},
-    {"idx": 31, "source": "ocr", "header": "Wysoko┼Ť─ç PARTERU"},
-    {"idx": 32, "source": "ocr", "header": "Wysoko┼Ť─ç PI─śTRA"},
-    {"idx": 33, "source": "ocr", "header": "Wysoko┼Ť─ç PODDASZA"},
+    {"idx": 31, "source": "ocr", "header": "Wysokość PARTERU"},
+    {"idx": 32, "source": "ocr", "header": "Wysokość PIĘTRA"},
+    {"idx": 33, "source": "ocr", "header": "Wysokość PODDASZA"},
     {"idx": 34, "source": "ocr", "header": "TARAS "},
     {"idx": 35, "source": "ocr", "header": "LOGGIA"},
     {"idx": 36, "source": "ocr", "header": "BALKON"},
-    {"idx": 37, "source": "marketing", "header": "GARA┼╗ 1"},
-    {"idx": 38, "source": "marketing", "header": "CENA GARA┼╗U"},
-    {"idx": 39, "source": "marketing", "header": "GARA┼╗ 2"},
-    {"idx": 40, "source": "marketing", "header": "CENA GARA┼╗U"},
+    {"idx": 37, "source": "marketing", "header": "GARAŻ 1"},
+    {"idx": 38, "source": "marketing", "header": "CENA GARAŻU"},
+    {"idx": 39, "source": "marketing", "header": "GARAŻ 2"},
+    {"idx": 40, "source": "marketing", "header": "CENA GARAŻU"},
     {"idx": 41, "source": "marketing", "header": "MIEJSCE POSTOJOWE 1"},
     {"idx": 42, "source": "marketing", "header": "CENA MP"},
     {"idx": 43, "source": "marketing", "header": "MIEJSCE POSTOJOWE 2"},
     {"idx": 44, "source": "marketing", "header": "CENA MP"},
-    {"idx": 45, "source": "marketing", "header": "NARO┼╗NY "},
+    {"idx": 45, "source": "marketing", "header": "NAROŻNY "},
     {"idx": 46, "source": "ocr", "header": "KUCHNIA"},
     {"idx": 47, "source": "ocr", "header": "ANEKS KUCHENNY "},
     {"idx": 48, "source": "ocr", "header": "GARDEROBA"},
     {"idx": 49, "source": "ocr", "header": "KOMINEK "},
     {"idx": 50, "source": "architekt", "header": "Okno w kuchni lub aneksie"},
     {"idx": 51, "source": "ocr", "header": "Schowek"},
-    {"idx": 52, "source": "ocr", "header": "Spi┼╝arnia"},
+    {"idx": 52, "source": "ocr", "header": "Spiżarnia"},
     {"idx": 53, "source": "ocr", "header": "Pomieszczenie gospodarcze"},
-    {"idx": 54, "source": "architekt", "header": "Lokal po┼é─ůczony z gara┼╝em"},
-    {"idx": 55, "source": "ocr", "header": "Druga ┼éazienka z prysznicem"},
+    {"idx": 54, "source": "architekt", "header": "Lokal połączony z garażem"},
+    {"idx": 55, "source": "ocr", "header": "Druga łazienka z prysznicem"},
     {"idx": 56, "source": "ocr", "header": "Gabinet"},
     {"idx": 57, "source": "", "header": "Balkon"},
     {"idx": 58, "source": "", "header": "Loggia"},
@@ -77,22 +77,22 @@ EXCEL_COLUMNS: List[Dict] = [
 ]
 
 
+TEMPLATE_BASENAME = "ostateczny - kopia.xlsx"
+
+
 def find_excel_template() -> Optional[str]:
+    """Szablon w tym samym folderze co skrypt (działa też na Streamlit Cloud)."""
     script_dir = Path(__file__).resolve().parent
-    search_roots = [
-        script_dir,
-        script_dir.parent / "tdo ai",
-        Path.home() / "Desktop" / "tdo ai",
-    ]
-    for root in search_roots:
-        matches = sorted(root.glob("ostateczny*kopia*.xlsx"))
-        if matches:
-            return str(matches[0])
-    return None
+    for name in (TEMPLATE_BASENAME, "ostateczny — kopia.xlsx"):
+        path = script_dir / name
+        if path.is_file():
+            return str(path)
+    matches = sorted(script_dir.glob("ostateczny*kopia*.xlsx"))
+    return str(matches[0]) if matches else None
 
 
 def build_full_row(result: Dict[str, str]) -> List[str]:
-    """Pe┼ény wiersz danych: OCR wype┼énione, marketing/architekt puste."""
+    """Pełny wiersz danych: OCR wypełnione, marketing/architekt puste."""
     row = []
     for col_def in EXCEL_COLUMNS:
         if col_def["source"] == "ocr":
@@ -111,9 +111,16 @@ def results_to_dataframe(results: List[Dict[str, str]]) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=columns)
 
 
-def export_results_to_excel(results: List[Dict[str, str]]) -> bytes:
-    template_path = find_excel_template()
-    if template_path:
+def export_results_to_excel(
+    results: List[Dict[str, str]], template_bytes: Optional[bytes] = None
+) -> bytes:
+    template_path = find_excel_template() if not template_bytes else None
+    if template_bytes:
+        wb = openpyxl.load_workbook(io.BytesIO(template_bytes))
+        ws = wb["Arkusz1"] if "Arkusz1" in wb.sheetnames else wb.active
+        if ws.max_row >= 4:
+            ws.delete_rows(4, ws.max_row - 3)
+    elif template_path:
         wb = openpyxl.load_workbook(template_path)
         ws = wb["Arkusz1"]
         if ws.max_row >= 4:
@@ -167,7 +174,7 @@ class ApartmentPlanOCR:
                     full_text += f"\n--- STRONA {i + 1} ---\n" + page_text
             return full_text, page_count
         except Exception as e:
-            st.error(f"B┼é─ůd podczas odczytu pliku PDF za pomoc─ů PyMuPDF: {e}")
+            st.error(f"Błąd podczas odczytu pliku PDF za pomocą PyMuPDF: {e}")
             return "", 0
 
     def extract_exposure_from_pdf(self, pdf_file_obj: io.BytesIO) -> str:
@@ -255,9 +262,9 @@ class ApartmentPlanOCR:
             "pietro2_scianki": "",
             "laczna": "",
         }
-        patterns_uzytkowa = [r"POWIERZCHNIA U┼╗YTKOWA"]
-        patterns_scianki = [r"POWIERZCHNIA POD ┼ÜCIANKAMI(?: I SCHOD├ôW)?"]
-        patterns_laczna = [r"Razem ┼ü─ůczna Powierzchnia Lokalu", r"┼ü─ůczna Powierzchnia Lokalu"]
+        patterns_uzytkowa = [r"POWIERZCHNIA UŻYTKOWA"]
+        patterns_scianki = [r"POWIERZCHNIA POD ŚCIANKAMI(?: I SCHODÓW)?"]
+        patterns_laczna = [r"Razem Łączna Powierzchnia Lokalu", r"Łączna Powierzchnia Lokalu"]
         sections = re.split(r"--- STRONA \d+ ---", text)
 
         if len(sections) > 1:
@@ -298,7 +305,7 @@ class ApartmentPlanOCR:
         laczna_pietro2 = self._safe_float_sum(pietro2_uzytkowa, pietro2_scianki)
         laczna_uzytkowa = self._safe_float_sum(parter_uzytkowa, pietro_uzytkowa, pietro2_uzytkowa)
 
-        garden_area = self.extract_surface_area(text, [r"Powierzchnia ogrodu", r"ogr├│d"])
+        garden_area = self.extract_surface_area(text, [r"Powierzchnia ogrodu", r"ogród"])
 
         sections = re.split(r"--- STRONA \d+ ---", text)
         parter_height_cm = self.extract_height_in_cm(sections[1]) if len(sections) > 1 else ""
@@ -328,20 +335,20 @@ class ApartmentPlanOCR:
         if rooms_matches:
             for rooms_block in rooms_matches:
                 bathrooms_count += len(
-                    re.findall(r"\d+\.\d+\s+(?:┼é|l)azienk\w*", rooms_block, re.IGNORECASE)
+                    re.findall(r"\d+\.\d+\s+(?:ł|l)azienk\w*", rooms_block, re.IGNORECASE)
                 )
                 rooms_count += len(
                     re.findall(
-                        r"\d+\.\d+\s+(?:salon|sypialn\w*|gabine\w*|pok[o├│]j\w*)",
+                        r"\d+\.\d+\s+(?:salon|sypialn\w*|gabine\w*|pok[oó]j\w*)",
                         rooms_block,
                         re.IGNORECASE,
                     )
                 )
         else:
-            bathrooms_count = len(re.findall(r"\d+\.\d+\s+(?:┼é|l)azienk\w*", text, re.IGNORECASE))
+            bathrooms_count = len(re.findall(r"\d+\.\d+\s+(?:ł|l)azienk\w*", text, re.IGNORECASE))
             rooms_count = len(
                 re.findall(
-                    r"\d+\.\d+\s+(?:salon|sypialn\w*|gabine\w*|pok[o├│]j\w*)", text, re.IGNORECASE
+                    r"\d+\.\d+\s+(?:salon|sypialn\w*|gabine\w*|pok[oó]j\w*)", text, re.IGNORECASE
                 )
             )
 
@@ -350,23 +357,23 @@ class ApartmentPlanOCR:
             "NUMER LOKALU": apartment_code or "",
             "EKSPOZYCJA ": exposure,
             "POWIERZCHNIA UZYTKOWA PARTER": parter_uzytkowa,
-            "POWIERZCHNIA UZYTKOWA PI─śTRO ": pietro_uzytkowa,
+            "POWIERZCHNIA UZYTKOWA PIĘTRO ": pietro_uzytkowa,
             "POWIERZCHNIA UZYTKOWA PIETRO 2": pietro2_uzytkowa if page_count >= 3 else "",
-            "Powierzchnia pod ┼Ťciankami i schod├│w Parter ": parter_scianki,
-            "Powierzchnia pod ┼Ťciankami  i schod├│w  Pi─Ötro  ": pietro_scianki,
-            "Powierzchnia pod ┼Ťciankami  i schod├│w  Pi─Ötro  2": pietro2_scianki if page_count >= 3 else "",
-            "┼é─ůczna powierzchnia parter": laczna_parter,
-            "┼é─ůczna powierzchnia pi─Ötro": laczna_pietro,
-            "┼é─ůczna powierzchnia pi─Ötro 2": laczna_pietro2 if page_count >= 3 else "",
-            "POWIERZCHNIA ┼ü─äCZNIE": floor_areas.get("laczna", ""),
-            "POWIERZCHNIA U┼╗YTKOWA ┼ü─äCZNIE": laczna_uzytkowa,
+            "Powierzchnia pod ściankami i schodów Parter ": parter_scianki,
+            "Powierzchnia pod ściankami  i schodów  Piętro  ": pietro_scianki,
+            "Powierzchnia pod ściankami  i schodów  Piętro  2": pietro2_scianki if page_count >= 3 else "",
+            "łączna powierzchnia parter": laczna_parter,
+            "łączna powierzchnia piętro": laczna_pietro,
+            "łączna powierzchnia piętro 2": laczna_pietro2 if page_count >= 3 else "",
+            "POWIERZCHNIA ŁĄCZNIE": floor_areas.get("laczna", ""),
+            "POWIERZCHNIA UŻYTKOWA ŁĄCZNIE": laczna_uzytkowa,
             "LICZBA POKOI ": str(rooms_count) if rooms_count > 0 else "",
             "LICZBA KONDYGNACJI ": str(page_count) if page_count > 0 else "",
-            "OGR├ôD": garden_area,
+            "OGRÓD": garden_area,
             "PODDASZE": "1" if page_count >= 3 else "0",
-            "Wysoko┼Ť─ç PARTERU": parter_height_m,
-            "Wysoko┼Ť─ç PI─śTRA": pietro_height_m,
-            "Wysoko┼Ť─ç PODDASZA": poddasze_height_m if page_count >= 3 else "",
+            "Wysokość PARTERU": parter_height_m,
+            "Wysokość PIĘTRA": pietro_height_m,
+            "Wysokość PODDASZA": poddasze_height_m if page_count >= 3 else "",
             "TARAS ": present([r"\btaras\w*"]),
             "LOGGIA": present([r"\bloggi\w*"]),
             "BALKON": present([r"\bbalkon\w*"]),
@@ -375,33 +382,48 @@ class ApartmentPlanOCR:
             "GARDEROBA": present([r"\bgarderob\w*"]),
             "KOMINEK ": present([r"\bkomine\w*"]),
             "Schowek": present([r"\bschow\w*"]),
-            "Spi┼╝arnia": present([r"\bspi(?:┼╝|z)arni\w*"]),
+            "Spiżarnia": present([r"\bspi(?:ż|z)arni\w*"]),
             "Pomieszczenie gospodarcze": present(
                 [r"\bpom\.?\s*gosp\.?\b", r"\bpomieszczenie\s+gospodarcze\b"]
             ),
-            "Druga ┼éazienka z prysznicem": "1" if bathrooms_count >= 2 else "0",
+            "Druga łazienka z prysznicem": "1" if bathrooms_count >= 2 else "0",
             "Gabinet": present([r"\bgabine\w*"]),
         }
         result.update(ocr_values)
         return result, text
 
 
-# --- Interfejs U┼╝ytkownika Streamlit ---
+# --- Interfejs Użytkownika Streamlit ---
 
 st.set_page_config(layout="wide")
-st.title("OCR do ekstrakcji danych ÔÇö format Excel ostateczny")
+st.title("OCR do ekstrakcji danych — format Excel ostateczny")
 st.subheader("PyMuPDF + eksport zgodny z szablonem (tylko kolumny OCR)")
 st.write(
-    "Wgraj pliki PDF. Program wype┼éni wy┼é─ůcznie kolumny oznaczone jako **ocr**. "
-    "Kolumny **marketing** i **architekt** pozostaj─ů puste ÔÇö uzupe┼éniacie je r─Öcznie."
+    "Wgraj pliki PDF. Program wypełni wyłącznie kolumny oznaczone jako **ocr**. "
+    "Kolumny **marketing** i **architekt** pozostają puste — uzupełniacie je ręcznie."
 )
 
 ocr = ApartmentPlanOCR()
 template_path = find_excel_template()
-if template_path:
-    st.caption(f"Szablon Excel: `{template_path}`")
-else:
-    st.warning("Nie znaleziono pliku szablonu `ostateczny ÔÇö kopia.xlsx`. Eksport utworzy nag┼é├│wki z kodu.")
+with st.sidebar:
+    st.header("Szablon Excel")
+    if template_path:
+        st.success(f"Używany szablon: `{Path(template_path).name}`")
+    else:
+        st.warning(
+            f"Brak pliku `{TEMPLATE_BASENAME}` w repozytorium. "
+            "Eksport utworzy nagłówki z kodu albo użyj własnego szablonu poniżej."
+        )
+    custom_template = st.file_uploader(
+        "Własny szablon (opcjonalnie, nadpisuje domyślny)",
+        type=["xlsx"],
+        key="custom_template_upload",
+    )
+    if custom_template is not None:
+        st.session_state["custom_template_bytes"] = custom_template.getvalue()
+        st.caption(f"Wgrano: {custom_template.name}")
+    elif "custom_template_bytes" in st.session_state:
+        del st.session_state["custom_template_bytes"]
 
 uploaded_files = st.file_uploader(
     "Wybierz pliki PDF (np. 'OP6_ZT-1A.pdf')",
@@ -410,11 +432,11 @@ uploaded_files = st.file_uploader(
 )
 
 if uploaded_files:
-    if st.button("Przetw├│rz pliki"):
+    if st.button("Przetwórz pliki"):
         all_results = []
         progress_bar = st.progress(0, text="Oczekiwanie...")
 
-        with st.spinner("Analizuj─Ö dokumenty..."):
+        with st.spinner("Analizuję dokumenty..."):
             for i, uploaded_file in enumerate(uploaded_files):
                 progress_bar.progress(
                     (i + 1) / len(uploaded_files), text=f"Przetwarzanie: {uploaded_file.name}"
@@ -423,29 +445,26 @@ if uploaded_files:
                 all_results.append(result)
 
                 if full_text:
-                    with st.expander(f"Poka┼╝/Ukryj pe┼ény tekst odczytany z '{uploaded_file.name}'"):
+                    with st.expander(f"Pokaż/Ukryj pełny tekst odczytany z '{uploaded_file.name}'"):
                         st.text_area("Surowy tekst OCR:", full_text, height=300, key=f"text_area_{i}")
                 else:
-                    st.warning(f"Nie uda┼éo si─Ö odczyta─ç tekstu z pliku '{uploaded_file.name}'.")
+                    st.warning(f"Nie udało się odczytać tekstu z pliku '{uploaded_file.name}'.")
 
         if all_results:
             st.markdown("---")
             st.header("Zbiorcze wyniki (wszystkie kolumny)")
-            st.success(f"Zako┼äczono! Przetworzono {len(all_results)} plik├│w.")
-            st.caption("Kolumny marketing i architekt s─ů puste ÔÇö uzupe┼énicie je r─Öcznie.")
+            st.success(f"Zakończono! Przetworzono {len(all_results)} plików.")
+            st.caption("Kolumny marketing i architekt są puste — uzupełnicie je ręcznie.")
             df_results = results_to_dataframe(all_results)
             st.dataframe(df_results)
             st.session_state["df_results"] = all_results
         else:
-            st.warning("Nie uda┼éo si─Ö wydoby─ç danych z ┼╝adnego z plik├│w.")
+            st.warning("Nie udało się wydobyć danych z żadnego z plików.")
 
 if "df_results" in st.session_state:
 
-    @st.cache_data
-    def to_excel(results: List[Dict[str, str]]) -> bytes:
-        return export_results_to_excel(results)
-
-    excel_data = to_excel(st.session_state["df_results"])
+    template_bytes = st.session_state.get("custom_template_bytes")
+    excel_data = export_results_to_excel(st.session_state["df_results"], template_bytes)
 
     st.download_button(
         label="Pobierz wyniki jako plik Excel (format szablonu)",
